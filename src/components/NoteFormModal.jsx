@@ -9,10 +9,9 @@ import ImageDropzone from './ImageDropzone';
 export default function NoteFormModal({ categories, onSave, onClose, initialCategory }) {
     const [title, setTitle] = useState('');
     const [text, setText] = useState('');
-    const [images, setImages] = useState([]); // Agora é um array
+    const [images, setImages] = useState([]);
     const [categoryId, setCategoryId] = useState(initialCategory);
 
-    // Função para adicionar arquivos da área de transferência
     const addFilesFromClipboard = useCallback((files) => {
         const newImages = [];
         for (let file of files) {
@@ -28,17 +27,13 @@ export default function NoteFormModal({ categories, onSave, onClose, initialCate
         }
     }, []);
 
-    // Efeito para adicionar o listener de "paste" ao documento
     useEffect(() => {
         const handlePaste = (event) => {
-            // Verifica se o foco NÃO está em um input ou textarea para não atrapalhar a digitação
             if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
                 addFilesFromClipboard(event.clipboardData.files);
             }
         };
-        // Adiciona o listener
         document.addEventListener('paste', handlePaste);
-        // Função de limpeza para remover o listener quando o modal for fechado
         return () => {
             document.removeEventListener('paste', handlePaste);
         };
@@ -51,10 +46,11 @@ export default function NoteFormModal({ categories, onSave, onClose, initialCate
             return;
         }
         const newNoteData = {
-            categoryId: parseInt(categoryId),
+            // CORREÇÃO: Removemos o parseInt(). Agora o categoryId será salvo como texto.
+            categoryId: categoryId,
             title,
             text,
-            imageUrls: images.map(img => img.preview), // Salva um array de URLs
+            imageUrls: images.map(img => img.preview),
         };
         onSave(newNoteData);
     };

@@ -3,52 +3,95 @@
     Função: Componente principal da aplicação
 */
 import { useState, useEffect } from 'react';
+// Novo: importamos addDoc para adicionar documentos e serverTimestamp para datas
+import { collection, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from './firebase';
+
 import { Plus, Hash, Book, Code, Home, Image as ImageIcon } from 'lucide-react';
 import NoteCard from './components/NoteCard';
 import NoteFormModal from './components/NoteFormModal';
 
-// Dados iniciais atualizados para usar um array de imageUrls
-const initialData = {
-  categories: [
-    { id: 1, name: 'Projetos Pessoais', icon: <Code className="w-4 h-4" /> },
-    { id: 2, name: 'Estudos', icon: <Book className="w-4 h-4" /> },
-    { id: 3, name: 'Trabalho', icon: <ImageIcon className="w-4 h-4" /> },
-    { id: 4, name: 'Casa', icon: <Home className="w-4 h-4" /> },
-  ],
-  notes: [
-    { id: 101, categoryId: 1, title: 'App de Teste', text: 'Continuar a partir de - instalação de requisitos. Preciso verificar a documentação do framework para ver se todas as dependências foram instaladas corretamente antes de prosseguir.', imageUrls: ['https://placehold.co/600x400/1e293b/94a3b8?text=Print+da+Tela'], author: 'Seu Nome', updatedAt: '2025-08-20T18:30:00Z' },
-    { id: 102, categoryId: 1, title: 'Portfolio', text: 'Ajustar o alinhamento do footer em telas menores. O problema parece ocorrer apenas em resoluções abaixo de 380px.', imageUrls: [], author: 'Seu Nome', updatedAt: '2025-08-19T11:00:00Z' },
-    { id: 103, categoryId: 2, title: 'Curso de React Avançado', text: 'Aula 5 - Hooks customizados. Parei nos 15 minutos, logo após a explicação sobre o hook useMemo.', imageUrls: [], author: 'Seu Nome', updatedAt: '2025-08-20T09:15:00Z' },
-  ],
-};
-
 function App() {
   const [categories, setCategories] = useState([]);
   const [notes, setNotes] = useState([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState(1);
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Função para buscar os dados iniciais
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const categoriesCollection = collection(db, "categories");
+      const categoriesSnapshot = await getDocs(categoriesCollection);
+      const categoriesList = categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setCategories(categoriesList);
+
+      if (categoriesList.length > 0 && !selectedCategoryId) {
+        setSelectedCategoryId(categoriesList[0].id);
+      }
+
+      const notesCollection = collection(db, "notes");
+      const notesSnapshot = await getDocs(notesCollection);
+      const notesList = notesSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+              id: doc.id,
+              ...data,
+              updatedAt: data.updatedAt ? data.updatedAt.toDate().toISOString() : new Date().toISOString()
+          }
+      });
+      setNotes(notesList);
+
+    } catch (error) {
+      console.error("Erro ao buscar dados do Firestore:", error);
+    }
+    setIsLoading(false);
+  };
+
+  // Busca os dados quando o componente é montado
   useEffect(() => {
-    setCategories(initialData.categories);
-    setNotes(initialData.notes);
+    fetchData();
   }, []);
+
+  // Nova: Função handleSaveNote atualizada para salvar no Firestore
+  const handleSaveNote = async (newNoteData) => {
+    try {
+      // Cria um novo objeto de anotação com os dados do formulário
+      const noteToAdd = {
+        ...newNoteData,
+        author: 'Seu Nome', // Provisório, virá do usuário logado no futuro
+        updatedAt: serverTimestamp(), // Usa o timestamp do servidor do Firebase
+      };
+      
+      // Adiciona o novo documento à coleção "notes"
+      await addDoc(collection(db, "notes"), noteToAdd);
+      
+      console.log("Anotação salva com sucesso!");
+      setShowForm(false); // Fecha o modal
+      
+      // Atualiza a lista de anotações na tela buscando os dados novamente
+      fetchData(); 
+
+    } catch (error) {
+      console.error("Erro ao salvar a anotação:", error);
+    }
+  };
+
+
+  const handleDeleteNote = (noteId) => {
+    console.log("Deletar nota:", noteId);
+  }
 
   const filteredNotes = notes.filter(note => note.categoryId === selectedCategoryId);
   const getCategoryNameById = (id) => categories.find(cat => cat.id === id)?.name || '';
 
-  const handleDeleteNote = (noteId) => {
-    setNotes(prevNotes => prevNotes.filter(note => note.id !== noteId));
-  }
-
-  const handleSaveNote = (newNoteData) => {
-    const newNote = {
-      ...newNoteData,
-      id: Date.now(),
-      author: 'Seu Nome',
-      updatedAt: new Date().toISOString(),
-    };
-    setNotes(prevNotes => [...prevNotes, newNote]);
-    setShowForm(false);
+  if (isLoading) {
+    return (
+        <div className="bg-slate-900 text-white min-h-screen flex items-center justify-center">
+            <p className="text-xl">A carregar dados...</p>
+        </div>
+    )
   }
 
   return (
@@ -81,7 +124,7 @@ function App() {
                       className={`w-full text-left flex items-center justify-between gap-3 p-3 rounded-md transition-colors duration-200 ${selectedCategoryId === category.id ? 'bg-indigo-600 text-white' : 'hover:bg-slate-700 text-slate-300'}`}
                     >
                       <div className="flex items-center gap-3">
-                        {category.icon}
+                        <Book className="w-4 h-4" />
                         {category.name}
                       </div>
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${selectedCategoryId === category.id ? 'bg-white/20' : 'bg-slate-700'}`}>{count}</span>
@@ -92,7 +135,7 @@ function App() {
             </ul>
           </aside>
 
-          <section className="md:col-span-3">
+          <section className="md-col-span-3">
             {filteredNotes.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {filteredNotes.map(note => (
@@ -107,7 +150,7 @@ function App() {
             ) : (
               <div className="text-center py-16 px-8 bg-slate-800/50 rounded-lg">
                 <h3 className="text-xl font-semibold text-slate-300">Nenhuma anotação aqui!</h3>
-                <p className="text-slate-400 mt-2">Crie sua primeira anotação nesta categoria clicando em "Nova Anotação".</p>
+                <p className="text-slate-400 mt-2">Crie a sua primeira anotação nesta categoria.</p>
               </div>
             )}
           </section>
