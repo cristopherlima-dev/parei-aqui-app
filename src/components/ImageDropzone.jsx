@@ -2,95 +2,98 @@
     Arquivo: ImageDropzone.jsx
     Função: Componente para upload de imagens (anexos)    
 */
-
 import { useState, useCallback } from 'react';
-import { Image as ImageIcon, X } from 'lucide-react';
+import { Image as ImageIcon, Trash2, Plus } from 'lucide-react';
 
-export default function ImageDropzone({ image, setImage }) {
+// Componente para a miniatura da imagem com botão de remover
+const ImagePreview = ({ image, onRemove }) => (
+    <div className="relative group w-24 h-24 border border-slate-600 rounded-md overflow-hidden">
+        <img src={image.preview} alt="Pré-visualização" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+                onClick={() => onRemove(image.preview)}
+                className="text-white hover:text-red-400 transition-colors"
+            >
+                <Trash2 className="w-5 h-5" />
+            </button>
+        </div>
+    </div>
+);
+
+export default function ImageDropzone({ images, setImages }) {
     const [isDragging, setIsDragging] = useState(false);
 
-    // Lida com a seleção de arquivo pelo clique
-    const handleFileChange = (e) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            setImage({
-                file: file,
-                preview: URL.createObjectURL(file),
-            });
-        }
-    };
-
-    // Lida com o arquivo arrastado e solto na área
-    const handleDrop = useCallback((e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(false);
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            const file = e.dataTransfer.files[0];
-            setImage({
-                file: file,
-                preview: URL.createObjectURL(file),
-            });
-        }
-    }, [setImage]);
-
-    // Efeitos visuais ao arrastar sobre a área
-    const handleDragOver = useCallback((e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(true);
-    }, []);
-
-    const handleDragLeave = useCallback((e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(false);
-    }, []);
-
-    // Lida com a imagem colada com CTRL+V
-    const handlePaste = useCallback((e) => {
-        if (e.clipboardData.files && e.clipboardData.files.length > 0) {
-            const file = e.clipboardData.files[0];
+    // Função para adicionar múltiplos arquivos de uma vez
+    const addFiles = useCallback((files) => {
+        const newImages = [];
+        for (let file of files) {
             if (file.type.startsWith("image/")) {
-                setImage({
+                newImages.push({
                     file: file,
                     preview: URL.createObjectURL(file),
                 });
             }
         }
-    }, [setImage]);
+        // Adiciona as novas imagens à lista existente
+        setImages(prevImages => [...prevImages, ...newImages]);
+    }, [setImages]);
+
+    const handleFileChange = (e) => {
+        if (e.target.files) {
+            addFiles(e.target.files);
+        }
+    };
+
+    const handleDrop = useCallback((e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+        if (e.dataTransfer.files) {
+            addFiles(e.dataTransfer.files);
+        }
+    }, [addFiles]);
+    
+    const handleDragOver = useCallback((e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }, []);
+    const handleDragLeave = useCallback((e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); }, []);
+
+    // Função para remover uma imagem da lista
+    const handleRemoveImage = (previewToRemove) => {
+        setImages(prevImages => prevImages.filter(img => img.preview !== previewToRemove));
+        URL.revokeObjectURL(previewToRemove); // Libera memória
+    };
 
     return (
         <div
-            className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors duration-300 ${isDragging ? 'border-indigo-400 bg-slate-700/50' : 'border-slate-600 hover:border-slate-500'}`}
+            className={`relative border-2 border-dashed rounded-lg p-4 text-center transition-colors duration-300 ${isDragging ? 'border-indigo-400 bg-slate-700/50' : 'border-slate-600 hover:border-slate-500'}`}
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
-            onPaste={handlePaste}
         >
             <input
                 type="file"
                 id="file-upload"
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                className="hidden" // Ocultamos para usar um label customizado
                 onChange={handleFileChange}
                 accept="image/*"
+                multiple // Permite selecionar múltiplos arquivos
             />
-            {image.preview ? (
-                <>
-                    <img src={image.preview} alt="Pré-visualização" className="mx-auto max-h-48 rounded-md" />
-                    <button
-                        onClick={() => setImage({ file: null, preview: null })}
-                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                    >
-                        <X className="w-4 h-4" />
-                    </button>
-                </>
+            {images.length > 0 ? (
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                    {images.map((image) => (
+                        <ImagePreview key={image.preview} image={image} onRemove={handleRemoveImage} />
+                    ))}
+                    {/* Botão para adicionar mais imagens */}
+                    <label htmlFor="file-upload" className="cursor-pointer w-24 h-24 flex flex-col items-center justify-center space-y-1 text-slate-400 border-2 border-dashed border-slate-600 rounded-md hover:bg-slate-700/50 hover:border-indigo-500 transition-all">
+                        <Plus className="w-8 h-8" />
+                        <span className="text-xs">Adicionar</span>
+                    </label>
+                </div>
             ) : (
-                <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center justify-center space-y-2 text-slate-400">
+                <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center justify-center space-y-2 text-slate-400 min-h-[10rem]">
                     <ImageIcon className="w-10 h-10" />
-                    <span className="font-semibold">Arraste e solte uma imagem</span>
+                    <span className="font-semibold">Arraste e solte imagens</span>
                     <span className="text-sm">ou clique para selecionar</span>
-                    <span className="text-xs mt-2 p-1 bg-slate-700 rounded">Você também pode colar com CTRL+V</span>
+                    <span className="text-xs mt-2 p-1 bg-slate-700 rounded">Cole com CTRL+V em qualquer lugar do modal</span>
                 </label>
             )}
         </div>

@@ -2,11 +2,8 @@
     Arquivo: NoteCard.jsx
     Função: É o molde para cada card de anotação.    
 */
-
-// ícones
 import { Eye, Edit, Trash2, Paperclip } from 'lucide-react';
 
-// Função para formatar datas - padrão brasileiro
 const formatDate = (dateString) => {
     if (!dateString) return 'Data inválida';
     const date = new Date(dateString);
@@ -20,20 +17,17 @@ const formatDate = (dateString) => {
     });
 };
 
-// O componente recebe as propriedades (props) da anotação
 export default function NoteCard({ note, categoryName, onDelete }) {
-    // Limita o texto a um número de caracteres para a prévia
     const truncateText = (text, maxLength = 100) => {
         if (text.length <= maxLength) return text;
         return text.substring(0, maxLength) + '...';
     };
 
-    // Variável para a contagem de anexos
-    const attachmentCount = note.imageUrl ? 1 : 0;
+    // Alterado para contar o tamanho do array de imagens
+    const attachmentCount = note.imageUrls ? note.imageUrls.length : 0;
 
     return (
         <div className="bg-slate-800 rounded-lg shadow-lg flex flex-col justify-between transition-all duration-300 hover:shadow-indigo-500/20 hover:-translate-y-1">
-            {/* Cabeçalho do Card */}
             <div className="p-4 border-b border-slate-700 flex justify-between items-center">
                 <span className="text-xs font-bold uppercase text-indigo-400">{categoryName}</span>
                 <div className="flex items-center gap-2 text-slate-400">
@@ -41,14 +35,10 @@ export default function NoteCard({ note, categoryName, onDelete }) {
                     <button className="hover:text-white transition-colors"><Edit className="w-4 h-4" /></button>
                 </div>
             </div>
-
-            {/* Corpo do Card */}
             <div className="p-4 flex-grow">
                 <h3 className="font-bold text-lg text-white mb-2">{note.title}</h3>
                 <p className="text-slate-300 text-sm">{truncateText(note.text)}</p>
             </div>
-
-            {/* Rodapé do Card */}
             <div className="p-4 bg-slate-800/50 border-t border-slate-700 text-xs text-slate-400 space-y-2">
                 <div className="flex items-center gap-2">
                     <Paperclip className="w-3 h-3" />
@@ -67,3 +57,4 @@ export default function NoteCard({ note, categoryName, onDelete }) {
         </div>
     );
 };
+

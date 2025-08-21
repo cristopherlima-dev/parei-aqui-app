@@ -2,38 +2,65 @@
     Arquivo: NoteFormModal.jsx
     Função: Modal que é aberto ao clicar no botão 'Nova Anotação'   
 */
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X } from 'lucide-react';
-import ImageDropzone from './ImageDropzone'; // Importando o componente de upload
+import ImageDropzone from './ImageDropzone';
 
 export default function NoteFormModal({ categories, onSave, onClose, initialCategory }) {
-    // Estados para controlar os campos do formulário
     const [title, setTitle] = useState('');
     const [text, setText] = useState('');
-    const [image, setImage] = useState({ file: null, preview: null });
+    const [images, setImages] = useState([]); // Agora é um array
     const [categoryId, setCategoryId] = useState(initialCategory);
+
+    // Função para adicionar arquivos da área de transferência
+    const addFilesFromClipboard = useCallback((files) => {
+        const newImages = [];
+        for (let file of files) {
+            if (file.type.startsWith("image/")) {
+                newImages.push({
+                    file: file,
+                    preview: URL.createObjectURL(file),
+                });
+            }
+        }
+        if (newImages.length > 0) {
+            setImages(prevImages => [...prevImages, ...newImages]);
+        }
+    }, []);
+
+    // Efeito para adicionar o listener de "paste" ao documento
+    useEffect(() => {
+        const handlePaste = (event) => {
+            // Verifica se o foco NÃO está em um input ou textarea para não atrapalhar a digitação
+            if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                addFilesFromClipboard(event.clipboardData.files);
+            }
+        };
+        // Adiciona o listener
+        document.addEventListener('paste', handlePaste);
+        // Função de limpeza para remover o listener quando o modal for fechado
+        return () => {
+            document.removeEventListener('paste', handlePaste);
+        };
+    }, [addFilesFromClipboard]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!title.trim() || !text.trim()) {
-            alert('Título e texto são obrigatórios!'); // Usaremos um sistema de notificação melhor depois
+            alert('Título e texto são obrigatórios!');
             return;
         }
-
         const newNoteData = {
             categoryId: parseInt(categoryId),
             title,
             text,
-            imageUrl: image.preview, // Por enquanto, salvaremos apenas a URL de pré-visualização
+            imageUrls: images.map(img => img.preview), // Salva um array de URLs
         };
-
-        onSave(newNoteData); // Chama a função de salvar que virá do App.jsx
+        onSave(newNoteData);
     };
 
     return (
-        // Fundo escuro do modal
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-40 p-4">
-            {/* Conteúdo do modal */}
             <div className="bg-slate-800 rounded-xl shadow-2xl p-8 w-full max-w-2xl relative">
                 <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white">
                     <X className="w-6 h-6" />
@@ -55,8 +82,8 @@ export default function NoteFormModal({ categories, onSave, onClose, initialCate
                         <textarea id="text" value={text} onChange={e => setText(e.target.value)} rows="3" className="w-full bg-slate-700 border border-slate-600 rounded-lg p-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Ex: Parei na configuração do banco de dados..."></textarea>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-1">Imagem (Opcional)</label>
-                        <ImageDropzone image={image} setImage={setImage} />
+                        <label className="block text-sm font-medium text-slate-300 mb-1">Imagens (Opcional)</label>
+                        <ImageDropzone images={images} setImages={setImages} />
                     </div>
                     <div className="flex justify-end pt-4">
                         <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-6 rounded-lg transition-colors duration-300">

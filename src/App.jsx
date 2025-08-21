@@ -2,12 +2,12 @@
     Arquivo: App.jsx
     Função: Componente principal da aplicação
 */
-
 import { useState, useEffect } from 'react';
 import { Plus, Hash, Book, Code, Home, Image as ImageIcon } from 'lucide-react';
 import NoteCard from './components/NoteCard';
 import NoteFormModal from './components/NoteFormModal';
 
+// Dados iniciais atualizados para usar um array de imageUrls
 const initialData = {
   categories: [
     { id: 1, name: 'Projetos Pessoais', icon: <Code className="w-4 h-4" /> },
@@ -16,9 +16,9 @@ const initialData = {
     { id: 4, name: 'Casa', icon: <Home className="w-4 h-4" /> },
   ],
   notes: [
-    { id: 101, categoryId: 1, title: 'App de Teste', text: 'Continuar a partir de - instalação de requisitos. Preciso verificar a documentação do framework para ver se todas as dependências foram instaladas corretamente antes de prosseguir.', imageUrl: 'https://placehold.co/600x400/1e293b/94a3b8?text=Print+da+Tela', author: 'Seu Nome', updatedAt: '2025-08-20T18:30:00Z' },
-    { id: 102, categoryId: 1, title: 'Portfolio', text: 'Ajustar o alinhamento do footer em telas menores. O problema parece ocorrer apenas em resoluções abaixo de 380px.', imageUrl: null, author: 'Seu Nome', updatedAt: '2025-08-19T11:00:00Z' },
-    { id: 103, categoryId: 2, title: 'Curso de React Avançado', text: 'Aula 5 - Hooks customizados. Parei nos 15 minutos, logo após a explicação sobre o hook useMemo.', imageUrl: null, author: 'Seu Nome', updatedAt: '2025-08-20T09:15:00Z' },
+    { id: 101, categoryId: 1, title: 'App de Teste', text: 'Continuar a partir de - instalação de requisitos. Preciso verificar a documentação do framework para ver se todas as dependências foram instaladas corretamente antes de prosseguir.', imageUrls: ['https://placehold.co/600x400/1e293b/94a3b8?text=Print+da+Tela'], author: 'Seu Nome', updatedAt: '2025-08-20T18:30:00Z' },
+    { id: 102, categoryId: 1, title: 'Portfolio', text: 'Ajustar o alinhamento do footer em telas menores. O problema parece ocorrer apenas em resoluções abaixo de 380px.', imageUrls: [], author: 'Seu Nome', updatedAt: '2025-08-19T11:00:00Z' },
+    { id: 103, categoryId: 2, title: 'Curso de React Avançado', text: 'Aula 5 - Hooks customizados. Parei nos 15 minutos, logo após a explicação sobre o hook useMemo.', imageUrls: [], author: 'Seu Nome', updatedAt: '2025-08-20T09:15:00Z' },
   ],
 };
 
@@ -127,4 +127,3 @@ function App() {
 }
 
 export default App;
-
