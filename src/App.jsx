@@ -5,9 +5,9 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Hash, Book, Code, Home, Image as ImageIcon } from 'lucide-react';
-import NoteCard from './components/NoteCard'; // Importando componente (card de anotação)
+import NoteCard from './components/NoteCard';
+import NoteFormModal from './components/NoteFormModal';
 
-// Dados iniciais (mock) para o nosso protótipo
 const initialData = {
   categories: [
     { id: 1, name: 'Projetos Pessoais', icon: <Code className="w-4 h-4" /> },
@@ -26,6 +26,7 @@ function App() {
   const [categories, setCategories] = useState([]);
   const [notes, setNotes] = useState([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState(1);
+  const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
     setCategories(initialData.categories);
@@ -39,6 +40,17 @@ function App() {
     setNotes(prevNotes => prevNotes.filter(note => note.id !== noteId));
   }
 
+  const handleSaveNote = (newNoteData) => {
+    const newNote = {
+      ...newNoteData,
+      id: Date.now(),
+      author: 'Seu Nome',
+      updatedAt: new Date().toISOString(),
+    };
+    setNotes(prevNotes => [...prevNotes, newNote]);
+    setShowForm(false);
+  }
+
   return (
     <div className="bg-slate-900 text-white min-h-screen font-sans">
       <div className="container mx-auto p-4 md:p-8">
@@ -47,7 +59,10 @@ function App() {
             <Hash className="w-8 h-8 text-indigo-400" />
             <h1 className="text-3xl font-bold tracking-tight">Parei Aqui</h1>
           </div>
-          <button className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors duration-300 shadow-lg shadow-indigo-600/30">
+          <button
+            onClick={() => setShowForm(true)}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors duration-300 shadow-lg shadow-indigo-600/30"
+          >
             <Plus className="w-5 h-5" />
             <span>Nova Anotação</span>
           </button>
@@ -97,9 +112,19 @@ function App() {
             )}
           </section>
         </main>
+
+        {showForm && (
+          <NoteFormModal
+            categories={categories}
+            onSave={handleSaveNote}
+            onClose={() => setShowForm(false)}
+            initialCategory={selectedCategoryId}
+          />
+        )}
       </div>
     </div>
   );
 }
 
 export default App;
+
