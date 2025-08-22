@@ -3,13 +3,14 @@
     Função: Componente principal da aplicação
 */
 import { useState, useEffect } from 'react';
-// Novo: importamos addDoc para adicionar documentos e serverTimestamp para datas
-import { collection, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
+// Novo: importamos doc e deleteDoc para apagar documentos
+import { collection, getDocs, addDoc, serverTimestamp, doc, deleteDoc } from "firebase/firestore";
 import { db } from './firebase';
 
 import { Plus, Hash, Book, Code, Home, Image as ImageIcon } from 'lucide-react';
 import NoteCard from './components/NoteCard';
 import NoteFormModal from './components/NoteFormModal';
+import ConfirmModal from './components/ConfirmModal'; // Novo: Importamos o modal de confirmação
 
 function App() {
   const [categories, setCategories] = useState([]);
@@ -17,10 +18,11 @@ function App() {
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [noteToDelete, setNoteToDelete] = useState(null); // Novo: Estado para guardar o ID da nota a ser apagada
 
   // Função para buscar os dados iniciais
   const fetchData = async () => {
-    setIsLoading(true);
+    // Não definimos isLoading aqui para evitar o piscar do ecrã ao recarregar
     try {
       const categoriesCollection = collection(db, "categories");
       const categoriesSnapshot = await getDocs(categoriesCollection);
@@ -46,42 +48,49 @@ function App() {
     } catch (error) {
       console.error("Erro ao buscar dados do Firestore:", error);
     }
-    setIsLoading(false);
+    setIsLoading(false); // Definimos isLoading como false apenas na primeira carga
   };
 
-  // Busca os dados quando o componente é montado
   useEffect(() => {
     fetchData();
   }, []);
 
-  // Nova: Função handleSaveNote atualizada para salvar no Firestore
   const handleSaveNote = async (newNoteData) => {
     try {
-      // Cria um novo objeto de anotação com os dados do formulário
       const noteToAdd = {
         ...newNoteData,
-        author: 'Seu Nome', // Provisório, virá do usuário logado no futuro
-        updatedAt: serverTimestamp(), // Usa o timestamp do servidor do Firebase
+        author: 'Seu Nome',
+        updatedAt: serverTimestamp(),
       };
-      
-      // Adiciona o novo documento à coleção "notes"
       await addDoc(collection(db, "notes"), noteToAdd);
-      
-      console.log("Anotação salva com sucesso!");
-      setShowForm(false); // Fecha o modal
-      
-      // Atualiza a lista de anotações na tela buscando os dados novamente
-      fetchData(); 
-
+      setShowForm(false);
+      fetchData();
     } catch (error) {
       console.error("Erro ao salvar a anotação:", error);
     }
   };
 
+  // Novo: Função que apaga a nota no Firestore
+  const handleDeleteNote = async (noteId) => {
+    if (!noteId) return;
+    try {
+        // Cria uma referência para o documento específico que queremos apagar
+        const noteDocRef = doc(db, "notes", noteId);
+        // Apaga o documento
+        await deleteDoc(noteDocRef);
+        
+        console.log("Anotação apagada com sucesso!");
+        setNoteToDelete(null); // Fecha o modal de confirmação
+        fetchData(); // Atualiza a lista de anotações
+    } catch (error) {
+        console.error("Erro ao apagar a anotação:", error);
+    }
+  };
 
-  const handleDeleteNote = (noteId) => {
-    console.log("Deletar nota:", noteId);
-  }
+  // Novo: Função para abrir o modal de confirmação
+  const openDeleteConfirm = (noteId) => {
+    setNoteToDelete(noteId);
+  };
 
   const filteredNotes = notes.filter(note => note.categoryId === selectedCategoryId);
   const getCategoryNameById = (id) => categories.find(cat => cat.id === id)?.name || '';
@@ -135,7 +144,7 @@ function App() {
             </ul>
           </aside>
 
-          <section className="md-col-span-3">
+          <section className="md:col-span-3">
             {filteredNotes.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {filteredNotes.map(note => (
@@ -143,7 +152,7 @@ function App() {
                     key={note.id}
                     note={note}
                     categoryName={getCategoryNameById(note.categoryId)}
-                    onDelete={handleDeleteNote}
+                    onDelete={openDeleteConfirm} // Alterado: agora abre o modal de confirmação
                   />
                 ))}
               </div>
@@ -163,6 +172,17 @@ function App() {
             onClose={() => setShowForm(false)}
             initialCategory={selectedCategoryId}
           />
+        )}
+
+        {/* Novo: Renderização condicional do modal de confirmação */}
+        {noteToDelete && (
+            <ConfirmModal 
+                title="Apagar Anotação"
+                message="Tem a certeza de que quer apagar esta anotação? Esta ação não pode ser desfeita."
+                onConfirm={() => handleDeleteNote(noteToDelete)}
+                onCancel={() => setNoteToDelete(null)}
+                confirmText="Sim, Apagar"
+            />
         )}
       </div>
     </div>
