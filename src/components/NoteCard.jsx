@@ -17,13 +17,13 @@ const formatDate = (dateString) => {
     });
 };
 
-export default function NoteCard({ note, categoryName, onDelete }) {
+// Adicionámos a nova propriedade 'onView'
+export default function NoteCard({ note, categoryName, onDelete, onView }) {
     const truncateText = (text, maxLength = 100) => {
         if (text.length <= maxLength) return text;
         return text.substring(0, maxLength) + '...';
     };
 
-    // Alterado para contar o tamanho do array de imagens
     const attachmentCount = note.imageUrls ? note.imageUrls.length : 0;
 
     return (
@@ -31,7 +31,10 @@ export default function NoteCard({ note, categoryName, onDelete }) {
             <div className="p-4 border-b border-slate-700 flex justify-between items-center">
                 <span className="text-xs font-bold uppercase text-indigo-400">{categoryName}</span>
                 <div className="flex items-center gap-2 text-slate-400">
-                    <button className="hover:text-white transition-colors"><Eye className="w-4 h-4" /></button>
+                    {/* O botão agora chama a função onView quando é clicado */}
+                    <button onClick={() => onView(note.id)} className="hover:text-white transition-colors">
+                        <Eye className="w-4 h-4" />
+                    </button>
                     <button className="hover:text-white transition-colors"><Edit className="w-4 h-4" /></button>
                 </div>
             </div>
@@ -57,4 +60,5 @@ export default function NoteCard({ note, categoryName, onDelete }) {
         </div>
     );
 };
+
 

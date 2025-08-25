@@ -6,11 +6,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { X } from 'lucide-react';
 import ImageDropzone from './ImageDropzone';
 
-export default function NoteFormModal({ categories, onSave, onClose, initialCategory }) {
+export default function NoteFormModal({ categories, onSave, onClose, initialCategory, isSaving }) {
     const [title, setTitle] = useState('');
     const [text, setText] = useState('');
     const [images, setImages] = useState([]);
-    const [categoryId, setCategoryId] = useState(initialCategory);
+    // CORREÇÃO: Garantimos que o valor inicial seja uma string vazia se for nulo
+    const [categoryId, setCategoryId] = useState(initialCategory || '');
 
     const addFilesFromClipboard = useCallback((files) => {
         const newImages = [];
@@ -46,11 +47,10 @@ export default function NoteFormModal({ categories, onSave, onClose, initialCate
             return;
         }
         const newNoteData = {
-            // CORREÇÃO: Removemos o parseInt(). Agora o categoryId será salvo como texto.
             categoryId: categoryId,
             title,
             text,
-            imageUrls: images.map(img => img.preview),
+            images: images,
         };
         onSave(newNoteData);
     };
@@ -66,6 +66,8 @@ export default function NoteFormModal({ categories, onSave, onClose, initialCate
                     <div>
                         <label htmlFor="category" className="block text-sm font-medium text-slate-300 mb-1">Categoria</label>
                         <select id="category" value={categoryId} onChange={e => setCategoryId(e.target.value)} className="w-full bg-slate-700 border border-slate-600 rounded-lg p-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                            {/* Adicionamos uma opção desativada para quando não há categorias */}
+                            {categories.length === 0 && <option value="" disabled>Crie uma categoria primeiro</option>}
                             {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                         </select>
                     </div>
@@ -82,8 +84,12 @@ export default function NoteFormModal({ categories, onSave, onClose, initialCate
                         <ImageDropzone images={images} setImages={setImages} />
                     </div>
                     <div className="flex justify-end pt-4">
-                        <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-6 rounded-lg transition-colors duration-300">
-                            Salvar
+                        <button 
+                            type="submit" 
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-6 rounded-lg transition-colors duration-300 disabled:bg-indigo-400 disabled:cursor-not-allowed"
+                            disabled={isSaving}
+                        >
+                            {isSaving ? 'A salvar...' : 'Salvar'}
                         </button>
                     </div>
                 </form>
