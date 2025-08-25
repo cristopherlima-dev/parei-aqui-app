@@ -17,8 +17,8 @@ const formatDate = (dateString) => {
     });
 };
 
-// Adicionámos a nova propriedade 'onView'
-export default function NoteCard({ note, categoryName, onDelete, onView }) {
+// Adicionamos a nova propriedade 'onEdit'
+export default function NoteCard({ note, categoryName, onDelete, onView, onEdit }) {
     const truncateText = (text, maxLength = 100) => {
         if (text.length <= maxLength) return text;
         return text.substring(0, maxLength) + '...';
@@ -31,11 +31,13 @@ export default function NoteCard({ note, categoryName, onDelete, onView }) {
             <div className="p-4 border-b border-slate-700 flex justify-between items-center">
                 <span className="text-xs font-bold uppercase text-indigo-400">{categoryName}</span>
                 <div className="flex items-center gap-2 text-slate-400">
-                    {/* O botão agora chama a função onView quando é clicado */}
                     <button onClick={() => onView(note.id)} className="hover:text-white transition-colors">
                         <Eye className="w-4 h-4" />
                     </button>
-                    <button className="hover:text-white transition-colors"><Edit className="w-4 h-4" /></button>
+                    {/* O botão de edição agora chama a função onEdit */}
+                    <button onClick={() => onEdit(note.id)} className="hover:text-white transition-colors">
+                        <Edit className="w-4 h-4" />
+                    </button>
                 </div>
             </div>
             <div className="p-4 flex-grow">
@@ -48,7 +50,8 @@ export default function NoteCard({ note, categoryName, onDelete, onView }) {
                     <span>{attachmentCount} anexo(s)</span>
                 </div>
                 <div className="flex flex-col">
-                    <span>Criado por: {note.author}</span>
+                    {/* A coluna 'author' não existe mais, podemos remover ou ajustar no futuro */}
+                    {/* <span>Criado por: {note.author}</span> */}
                     <span>Atualizado em: {formatDate(note.updatedAt)}</span>
                 </div>
             </div>
@@ -60,5 +63,6 @@ export default function NoteCard({ note, categoryName, onDelete, onView }) {
         </div>
     );
 };
+
 
 

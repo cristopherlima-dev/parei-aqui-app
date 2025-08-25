@@ -6,12 +6,27 @@ import { useState, useEffect, useCallback } from 'react';
 import { X } from 'lucide-react';
 import ImageDropzone from './ImageDropzone';
 
-export default function NoteFormModal({ categories, onSave, onClose, initialCategory, isSaving }) {
+// O modal agora aceita uma nova propriedade: 'noteToEdit'
+export default function NoteFormModal({ categories, onSave, onClose, initialCategory, isSaving, noteToEdit }) {
     const [title, setTitle] = useState('');
     const [text, setText] = useState('');
     const [images, setImages] = useState([]);
-    // CORREÇÃO: Garantimos que o valor inicial seja uma string vazia se for nulo
     const [categoryId, setCategoryId] = useState(initialCategory || '');
+
+    // Novo: useEffect para preencher o formulário se estivermos editando
+    useEffect(() => {
+        if (noteToEdit) {
+            setTitle(noteToEdit.title);
+            setText(noteToEdit.text);
+            setCategoryId(noteToEdit.categoryId);
+            // Para as imagens, precisamos de um formato que nosso dropzone entenda
+            const existingImages = noteToEdit.imageUrls.map(url => ({
+                file: null, // Não temos o arquivo original, apenas a URL
+                preview: url
+            }));
+            setImages(existingImages);
+        }
+    }, [noteToEdit]);
 
     const addFilesFromClipboard = useCallback((files) => {
         const newImages = [];
@@ -46,13 +61,15 @@ export default function NoteFormModal({ categories, onSave, onClose, initialCate
             alert('Título e texto são obrigatórios!');
             return;
         }
-        const newNoteData = {
+        const noteData = {
             categoryId: categoryId,
             title,
             text,
             images: images,
+            // Se estivermos editando, passamos o ID da nota
+            id: noteToEdit ? noteToEdit.id : null
         };
-        onSave(newNoteData);
+        onSave(noteData);
     };
 
     return (
@@ -61,12 +78,12 @@ export default function NoteFormModal({ categories, onSave, onClose, initialCate
                 <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white">
                     <X className="w-6 h-6" />
                 </button>
-                <h2 className="text-2xl font-bold mb-6">Criar nova anotação</h2>
+                {/* O título do modal muda dependendo se estamos criando ou editando */}
+                <h2 className="text-2xl font-bold mb-6">{noteToEdit ? 'Editar Anotação' : 'Criar nova anotação'}</h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label htmlFor="category" className="block text-sm font-medium text-slate-300 mb-1">Categoria</label>
                         <select id="category" value={categoryId} onChange={e => setCategoryId(e.target.value)} className="w-full bg-slate-700 border border-slate-600 rounded-lg p-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
-                            {/* Adicionamos uma opção desativada para quando não há categorias */}
                             {categories.length === 0 && <option value="" disabled>Crie uma categoria primeiro</option>}
                             {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                         </select>
@@ -89,7 +106,7 @@ export default function NoteFormModal({ categories, onSave, onClose, initialCate
                             className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-6 rounded-lg transition-colors duration-300 disabled:bg-indigo-400 disabled:cursor-not-allowed"
                             disabled={isSaving}
                         >
-                            {isSaving ? 'A salvar...' : 'Salvar'}
+                            {isSaving ? 'Salvando...' : 'Salvar'}
                         </button>
                     </div>
                 </form>
